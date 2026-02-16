@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Management - Pharmacy AI{% endblock %}
+
+{% block content %}
+<div class="inventory-page">
+    <div class="page-header">
+        <h2>Medicine Inventory</h2>
+        <div class="header-actions">
+            <form method="GET" class="search-form">
+                <input type="text" name="search" placeholder="Search medicines..." value="{{ search_query }}"
+                    class="search-input">
+                <button type="submit" class="btn btn-secondary">Search</button>
+            </form>
+            <button class="btn btn-primary" onclick="showAddMedicineModal()">Add Medicine</button>
+        </div>
+    </div>
+
+    <div class="inventory-stats">
+        <div class="stat-card">
+            <h3>{{ medicines|length }}</h3>
+            <p>Total Medicines</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ low_stock_count }}</h3>
+            <p>Low Stock Items</p>
+        </div>
+    </div>
+
+    {% if medicines %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Composition</th>
+                <th>Manufacturer</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for medicine in medicines %}
+            <tr>
+                <td>{{ medicine.id }}</td>
+                <td><strong>{{ medicine.name }}</strong></td>
+                <td>{{ medicine.composition|truncatewords:10 }}</td>
+                <td>{{ medicine.manufacturer|default:"-" }}</td>
+                <td>
+                    <span class="stock-quantity {% if medicine.stock_quantity < 10 %}low-stock{% endif %}">
+                        {{ medicine.stock_quantity }}
+                    </span>
+                </td>
+                <td>
+                    {% if medicine.is_available %}
+                    <span class="badge badge-success">Available</span>
+                    {% else %}
+                    <span class="badge badge-error">Out of Stock</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary"
+                        onclick="editMedicine({{ medicine.id }}, '{{ medicine.name }}', '{{ medicine.composition }}', {{ medicine.stock_quantity }}, '{{ medicine.manufacturer }}')">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteMedicine({{ medicine.id }})">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-data">
+        <p>No medicines found. {% if search_query %}Try a different search term.{% else %}Add your first medicine to get
+            started.{% endif %}</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add/Edit Medicine Modal -->
+<div id="medicineModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeMedicineModal()">&times;</span>
+        <h3 id="modalTitle">Add Medicine</h3>
+        <form id="medicineForm" method="POST" action="{% url 'api_medicines' %}">
+            {% csrf_token %}
+            <input type="hidden" id="medicineId" name="id">
+
+            <div class="form-group">
+                <label for="medicineName">Medicine Name *</label>
+                <input type="text" id="medicineName" name="name" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="medicineComposition">Composition</label>
+                <textarea id="medicineComposition" name="composition" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="medicineStock">Stock Quantity *</label>
+                <input type="number" id="medicineStock" name="stock_quantity" min="0" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="medicineManufacturer">Manufacturer</label>
+                <input type="text" id="medicineManufacturer" name="manufacturer" class="form-control">
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeMedicineModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showAddMedicineModal() {
+        document.getElementById('modalTitle').textContent = 'Add Medicine';
+        document.getElementById('medicineForm').reset();
+        document.getElementById('medicineId').value = '';
+        document.getElementById('medicineModal').style.display = 'block';
+    }
+
+    function editMedicine(id, name, composition, stock, manufacturer) {
+        document.getElementById('modalTitle').textContent = 'Edit Medicine';
+        document.getElementById('medicineId').value = id;
+        document.getElementById('medicineName').value = name;
+        document.getElementById('medicineComposition').value = composition;
+        document.getElementById('medicineStock').value = stock;
+        document.getElementById('medicineManufacturer').value = manufacturer;
+        document.getElementById('medicineModal').style.display = 'block';
+    }
+
+    function closeMedicineModal() {
+        document.getElementById('medicineModal').style.display = 'none';
+    }
+
+    function deleteMedicine(id) {
+        if (confirm('Are you sure you want to delete this medicine?')) {
+            fetch(`/api/medicines/${id}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+            })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting medicine');
+                    }
+                });
+        }
+    }
+
+    document.getElementById('medicineForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const medicineId = document.getElementById('medicineId').value;
+        const url = medicineId ? `/api/medicines/${medicineId}/` : '/api/medicines/';
+        const method = medicineId ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            },
+            body: JSON.stringify({
+                name: formData.get('name'),
+                composition: formData.get('composition'),
+                stock_quantity: parseInt(formData.get('stock_quantity')) || 0,
+                manufacturer: formData.get('manufacturer'),
+            }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                alert('Error saving medicine');
+            });
+    });
+
+    window.onclick = function (event) {
+        const modal = document.getElementById('medicineModal');
+        if (event.target == modal) {
+            closeMedicineModal();
+        }
+    }
+</script>
+{% endblock %}

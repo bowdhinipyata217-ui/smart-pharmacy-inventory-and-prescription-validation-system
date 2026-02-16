@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Prescription Results - Pharmacy AI{% endblock %}
+
+{% block content %}
+<div class="results-page">
+    <div class="page-header">
+        <h2>Prescription Processing Results</h2>
+        <p>Prescription ID: #{{ prescription.id }} | Uploaded: {{ prescription.created_at|date:"M d, Y H:i" }}</p>
+    </div>
+
+    <div class="results-card">
+        <h3>Medicine Availability</h3>
+        
+        {% if results %}
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Medicine Name</th>
+                        <th>Status</th>
+                        <th>Stock Quantity</th>
+                        <th>Alternative</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td><strong>{{ result.medicine_name }}</strong></td>
+                        <td>
+                            {% if result.status == 'Available' %}
+                                <span class="badge badge-success">✓ Available</span>
+                            {% elif result.status == 'Out of Stock' %}
+                                <span class="badge badge-warning">⚠ Out of Stock</span>
+                            {% else %}
+                                <span class="badge badge-error">✗ Not Found</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if result.stock is not None %}
+                                {{ result.stock }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if result.alternative %}
+                                <span class="alternative-medicine">{{ result.alternative }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-results">
+                <p>No medicines found in this prescription.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if prescription.extracted_text %}
+    <div class="extracted-text-card">
+        <h3>Extracted Text</h3>
+        <div class="extracted-text">
+            <pre>{{ prescription.extracted_text }}</pre>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="actions">
+        <a href="{% url 'upload_prescription' %}" class="btn btn-primary">Upload Another</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

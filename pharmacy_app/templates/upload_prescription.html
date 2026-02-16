@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Prescription - Pharmacy AI{% endblock %}
+
+{% block content %}
+<div class="upload-page">
+    <div class="page-header">
+        <h2>Upload Prescription</h2>
+        <p>Upload a prescription image or PDF to extract and check medicine availability</p>
+    </div>
+
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <div class="upload-card">
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_file">Select Prescription File</label>
+                <input type="file" id="id_file" name="file" accept=".jpg,.jpeg,.png,.pdf" required>
+                <small class="form-help">Supported formats: JPG, PNG, PDF (Max 10MB)</small>
+            </div>
+
+            <div class="upload-preview" id="preview" style="display: none;">
+                <img id="previewImage" src="" alt="Preview" style="max-width: 100%; max-height: 300px;">
+            </div>
+
+            <div class="upload-progress" id="progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">Uploading...</p>
+            </div>
+
+            <div class="loading-spinner" id="spinner" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing prescription with AI...</p>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                Upload and Process
+            </button>
+        </form>
+    </div>
+
+    <div class="info-box">
+        <h4>How it works:</h4>
+        <ol>
+            <li>Upload your prescription image or PDF</li>
+            <li>Our OCR system extracts text from the prescription</li>
+            <li>AI identifies medicine names</li>
+            <li>System checks inventory and suggests alternatives if needed</li>
+        </ol>
+    </div>
+</div>
+
+<script>
+document.getElementById('id_file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('previewImage').src = e.target.result;
+            document.getElementById('preview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('preview').style.display = 'none';
+    }
+});
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    const progress = document.getElementById('progress');
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+    spinner.style.display = 'block';
+    progress.style.display = 'block';
+});
+</script>
+{% endblock %}

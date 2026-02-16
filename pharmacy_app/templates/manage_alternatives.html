@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Alternatives - Pharmacy AI{% endblock %}
+
+{% block content %}
+<div class="alternatives-page">
+    <div class="page-header">
+        <h2>Manage Alternative Medicines</h2>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="showAddAlternativeModal()">Add Alternative</button>
+        </div>
+    </div>
+
+    {% if alternatives %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Medicine</th>
+                <th>Alternative Suggestion</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alt in alternatives %}
+            <tr>
+                <td>{{ alt.medicine.name }}</td>
+                <td>{{ alt.alternative_medicine.name }}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAlternative({{ alt.id }})">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-data">
+        <p>No alternative medicines defined yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Alternative Modal -->
+<div id="alternativeModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeAlternativeModal()">&times;</span>
+        <h3>Add Alternative Medicine</h3>
+        <form id="alternativeForm" method="POST">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="medicine">Medicine (Out of Stock candidate)</label>
+                <select id="medicine" name="medicine" class="form-control" required>
+                    <option value="">Select Medicine</option>
+                    {% for med in medicines %}
+                    <option value="{{ med.id }}">{{ med.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="alternative_medicine">Alternative Suggestion</label>
+                <select id="alternative_medicine" name="alternative_medicine" class="form-control" required>
+                    <option value="">Select Alternative</option>
+                    {% for med in medicines %}
+                    <option value="{{ med.id }}">{{ med.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeAlternativeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showAddAlternativeModal() {
+        document.getElementById('alternativeForm').reset();
+        document.getElementById('alternativeModal').style.display = 'block';
+    }
+
+    function closeAlternativeModal() {
+        document.getElementById('alternativeModal').style.display = 'none';
+    }
+
+    function deleteAlternative(id) {
+        if (confirm('Are you sure you want to delete this alternative suggestion?')) {
+            location.href = `delete/${id}/`;
+        }
+    }
+
+    window.onclick = function (event) {
+        const modal = document.getElementById('alternativeModal');
+        if (event.target == modal) {
+            closeAlternativeModal();
+        }
+    }
+</script>
+{% endblock %}

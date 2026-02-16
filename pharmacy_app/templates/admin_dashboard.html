@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Pharmacy AI{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <div class="page-header">
+        <h2>Admin Dashboard</h2>
+        <p>Overview of pharmacy operations</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-primary">
+            <div class="stat-icon">💊</div>
+            <div class="stat-content">
+                <h3>{{ total_medicines }}</h3>
+                <p>Total Medicines</p>
+            </div>
+        </div>
+
+        <div class="stat-card stat-warning">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-content">
+                <h3>{{ low_stock_medicines }}</h3>
+                <p>Low Stock Items</p>
+            </div>
+        </div>
+
+        <div class="stat-card stat-success">
+            <div class="stat-icon">📄</div>
+            <div class="stat-content">
+                <h3>{{ total_prescriptions }}</h3>
+                <p>Total Prescriptions</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+            <a href="{% url 'inventory' %}" class="btn btn-primary">Manage Inventory</a>
+            <a href="{% url 'upload_prescription' %}" class="btn btn-secondary">Upload Prescription</a>
+        </div>
+    </div>
+
+    <div class="recent-section">
+        <h3>Recent Prescriptions</h3>
+        {% if recent_prescriptions %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Uploaded By</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prescription in recent_prescriptions %}
+                    <tr>
+                        <td>#{{ prescription.id }}</td>
+                        <td>{{ prescription.uploaded_by.username|default:"System" }}</td>
+                        <td>{{ prescription.created_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            {% if prescription.results_json %}
+                                <span class="badge badge-success">Processed</span>
+                            {% else %}
+                                <span class="badge badge-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'results' prescription.id %}" class="btn btn-sm btn-primary">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="no-data">No prescriptions yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
